@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="horizontal"
+    
+     >
+    <com.zhangqi.meituanrefreshlistview.MeiTuanRefreshFirstStepView
+        android:id="@+id/first_view"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+          android:layout_margin="10dp"
+        />
+    <com.zhangqi.meituanrefreshlistview.MeiTuanRefreshSecondStepView
+        android:id="@+id/second_view"
+        android:layout_width="45dp"
+        android:visibility="gone"
+          android:layout_margin="10dp"
+        android:layout_height="45dp"
+        />
+    <com.zhangqi.meituanrefreshlistview.MeiTuanRefreshThirdStepView
+        android:id="@+id/third_view"
+        android:layout_width="45dp"
+        android:visibility="gone"
+          android:layout_margin="10dp"
+        android:layout_height="45dp"
+        />
+    <TextView 
+        android:id="@+id/tv_pull_to_refresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="10dp"
+        android:text="下拉刷新"
+        />
+
+</LinearLayout>
