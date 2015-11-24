@@ -8,34 +8,41 @@ import android.widget.ArrayAdapter;
 
 import com.zhangqi.meituanrefreshlistview.MeiTuanListView.OnMeiTuanRefreshListener;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 
 public class MainActivity extends Activity implements OnMeiTuanRefreshListener{
-	private static MeiTuanListView mListView;
+	private MeiTuanListView mListView;
 	private List<String> mDatas;
-	private static ArrayAdapter<String> mAdapter;
+	private ArrayAdapter<String> mAdapter;
 	private final static int REFRESH_COMPLETE = 0;
 	/**
-	 * mInterHandler运行在主线程，因为setOnRefreshComplete需要改变ui，必须在主线程去改变ui
-	 * 所以在handleMessage中调用mListView.setOnRefreshComplete();
+	 * mInterHandler是一个私有静态内部类继承自Handler，内部持有MainActivity的弱引用，
+	 * 避免内存泄露
 	 */
-	private InterHandler mInterHandler = new InterHandler();
+	private InterHandler mInterHandler = new InterHandler(this);
 
 	private static class InterHandler extends Handler{
+		private WeakReference<MainActivity> mActivity;
+		public InterHandler(MainActivity activity){
+			mActivity = new WeakReference<MainActivity>(activity);
+		}
 		@Override
 		public void handleMessage(Message msg) {
-			switch (msg.what) {
-				case REFRESH_COMPLETE:
-					mListView.setOnRefreshComplete();
-					mAdapter.notifyDataSetChanged();
-					mListView.setSelection(0);
-					break;
-
-				default:
-					break;
+			MainActivity activity = mActivity.get();
+			if (activity != null) {
+				switch (msg.what) {
+					case REFRESH_COMPLETE:
+							activity.mListView.setOnRefreshComplete();
+							activity.mAdapter.notifyDataSetChanged();
+							activity.mListView.setSelection(0);
+						break;
+				}
+			}else{
+				super.handleMessage(msg);
 			}
 		}
 	}
