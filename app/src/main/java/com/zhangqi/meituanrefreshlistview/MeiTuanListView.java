@@ -151,72 +151,29 @@ public class MeiTuanListView extends ListView implements AbsListView.OnScrollLis
 						offsetY = tempY - startY;
 						//计算当前滑动的高度
 						float currentHeight = (-headerViewHeight+offsetY/3);
-						//用当前滑动的高度和头部headerView的总高度进行比 计算出当前滑动的百分比 0到1
-						float currentProgress = 1+currentHeight/headerViewHeight;
-						//如果当前百分比大于1了，将其设置为1，目的是让第一个状态的椭圆不再继续变大
-						if (currentProgress>=1) {
-							currentProgress = 1;
-						}
-						//如果当前的状态是放开刷新，并且已经记录y坐标
-						if (state == RELEASE_TO_REFRESH && isRecord) {
+						//获得控制椭圆图形的大小比例
+						float currentProgress = getCurrentProgress();
+						if (state != DONE && isRecord ){
 							setSelection(0);
-							//如果当前滑动的距离小于headerView的总高度
-							if (-headerViewHeight+offsetY/RATIO<0) {
+							if (offsetY <= 0) {
+								//将状态变为done
+								state = DONE;
+							}else if (-headerViewHeight+offsetY/RATIO<0){
 								//将状态置为下拉刷新状态
 								state = PULL_TO_REFRESH;
-								//根据状态改变headerView，主要是更新动画和文字等信息
-								changeHeaderByState(state);
-								//如果当前y的位移值小于0，即为headerView隐藏了
-							}else if (offsetY<=0) {
-								//将状态变为done
-								state = DONE;
-								//根据状态改变headerView，主要是更新动画和文字等信息
-								changeHeaderByState(state);
-							}
-						}
-						//如果当前状态为下拉刷新并且已经记录y坐标
-						if (state == PULL_TO_REFRESH && isRecord) {
-							setSelection(0);
-							//如果下拉距离大于等于headerView的总高度
-							if (-headerViewHeight+offsetY/RATIO>=0) {
+							}else if (-headerViewHeight+offsetY/RATIO>=0){
 								//将状态变为放开刷新
 								state = RELEASE_TO_REFRESH;
-								//根据状态改变headerView，主要是更新动画和文字等信息
-								changeHeaderByState(state);
-								//如果当前y的位移值小于0，即为headerView隐藏了
-							}else if (offsetY<=0) {
-								//将状态变为done
-								state = DONE;
-								//根据状态改变headerView，主要是更新动画和文字等信息
-								changeHeaderByState(state);
 							}
-						}
-						//如果当前状态为done并且已经记录y坐标
-						if (state == DONE && isRecord) {
+						}else if (state == DONE && isRecord) {//如果当前状态为done并且已经记录y坐标
 							//如果位移值大于0
 							if (offsetY>=0) {
 								//将状态改为下拉刷新状态
 								state = PULL_TO_REFRESH;
 							}
 						}
-						//如果为下拉刷新状态
-						if (state == PULL_TO_REFRESH) {
-							//则改变headerView的padding来实现下拉的效果
-							headerView.setPadding(0,(int)(-headerViewHeight+offsetY/RATIO) ,0,0);
-							//给第一个状态的View设置当前进度值
-							mFirstView.setCurrentProgress(currentProgress);
-							//重画
-							mFirstView.postInvalidate();
-						}
-						//如果为放开刷新状态
-						if (state == RELEASE_TO_REFRESH) {
-							//改变headerView的padding值
-							headerView.setPadding(0,(int)(-headerViewHeight+offsetY/RATIO) ,0, 0);
-							//给第一个状态的View设置当前进度值
-							mFirstView.setCurrentProgress(currentProgress);
-							//重画
-							mFirstView.postInvalidate();
-						}
+						//根据状态改变headerView，主要是更新动画和文字等信息
+						changeHeaderByState(state,currentProgress);
 					}
 					break;
 				//当用户手指抬起时
@@ -226,7 +183,7 @@ public class MeiTuanListView extends ListView implements AbsListView.OnScrollLis
 						//平滑的隐藏headerView
 						this.smoothScrollBy((int)(-headerViewHeight+offsetY/RATIO)+headerViewHeight, 500);
 						//根据状态改变headerView
-						changeHeaderByState(state);
+						changeHeaderByState(state,1);
 					}
 					//如果当前状态为放开刷新
 					if (state == RELEASE_TO_REFRESH) {
@@ -237,7 +194,7 @@ public class MeiTuanListView extends ListView implements AbsListView.OnScrollLis
 						//回调接口的onRefresh方法
 						mOnRefreshListener.onRefresh();
 						//根据状态改变headerView
-						changeHeaderByState(state);
+						changeHeaderByState(state,1);
 					}
 					//这一套手势执行完，一定别忘了将记录y坐标的isRecord改为false，以便于下一次手势的执行
 					isRecord = false;
@@ -249,11 +206,23 @@ public class MeiTuanListView extends ListView implements AbsListView.OnScrollLis
 		return super.onTouchEvent(ev);
 	}
 
+	private float getCurrentProgress() {
+		//计算当前滑动的高度
+		float currentHeight = (-headerViewHeight+offsetY/RATIO);
+		//用当前滑动的高度和头部headerView的总高度进行比 计算出当前滑动的百分比 0到1
+		float currentProgress = 1+currentHeight/headerViewHeight;
+		//如果当前百分比大于1了，将其设置为1，目的是让第一个状态的椭圆不再继续变大
+		if (currentProgress>=1) {
+            		currentProgress = 1;
+        	}
+		return currentProgress;
+	}
+	
 	/**
 	 * 根据状态改变headerView的动画和文字显示
 	 * @param state
 	 */
-	private void changeHeaderByState(int state){
+	private void changeHeaderByState(int state, float currentProgress){
 		switch (state) {
 		case DONE://如果的隐藏的状态
 			//设置headerView的padding为隐藏
@@ -270,6 +239,8 @@ public class MeiTuanListView extends ListView implements AbsListView.OnScrollLis
 			thirdAnim.stop();
 			break;
 		case RELEASE_TO_REFRESH://当前状态为放开刷新
+			//改变headerView的padding值
+			headerView.setPadding(0,(int)(-headerViewHeight+offsetY/RATIO) ,0, 0);
 			//文字显示为放开刷新
 			tv_pull_to_refresh.setText("放开刷新");
 			//第一状态view隐藏起来
@@ -288,6 +259,10 @@ public class MeiTuanListView extends ListView implements AbsListView.OnScrollLis
 			tv_pull_to_refresh.setText("下拉刷新");
 			//第一状态view显示出来
 			mFirstView.setVisibility(View.VISIBLE);
+			//则改变headerView的padding来实现下拉的效果
+			headerView.setPadding(0, (int)(-headerViewHeight+offsetY/RATIO) ,0,0);
+			//给第一个状态的View设置当前进度值
+			mFirstView.setCurrentProgress(currentProgress);
 			//第二状态view隐藏起来
 			mSecondView.setVisibility(View.GONE);
 			//第二状态动画停止
